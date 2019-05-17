@@ -3,5 +3,3 @@
 
 
 [Deploy a AWS Database](https://www.prisma.io/tutorials/deploy-prisma-to-aws-fargate-ct14)
-
-[Deploy a Prisma server to Fargate](https://github.com/prisma/prisma-templates)
