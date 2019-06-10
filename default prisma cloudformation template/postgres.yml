@@ -39,10 +39,10 @@ Parameters:
         Type: String
     
     DatabaseUsername:
-        Default: "webchemist"
+        Default: "prisma"
         AllowedPattern: "[a-zA-Z0-9]+"
         ConstraintDescription: must contain only alphanumeric characters. Must have length 1-16
-        Description: The database admin account user name. (Default "webchemist")
+        Description: The database admin account user name. (Default "prisma")
         MaxLength: '16'
         MinLength: '1'
         Type: String
@@ -54,19 +54,6 @@ Parameters:
         MinValue: 20
         MaxValue: 16384
         ConstraintDescription: Allocated storage size must be in range 20-16384 GB
-    
-    VPC:
-        Type: String
-        Description: VPC ID
-
-
-    PrivateSubnet1:
-        Type: String
-        Description: Subnet1 ID
-
-    PrivateSubnet2:
-        Type: String
-        Description: Subnet2 ID
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -99,8 +86,8 @@ Resources:
         Properties:
             DBSubnetGroupDescription: CloudFormation managed DB subnet group.
             SubnetIds:
-                - !Ref PrivateSubnet1
-                - !Ref PrivateSubnet2
+                - !Ref PublicSubnet1
+                - !Ref PublicSubnet2
 
     ParameterGroup:
         Type: "AWS::RDS::DBParameterGroup"
@@ -179,6 +166,79 @@ Resources:
                 - Ref: StackAlarmTopic
             OKActions: 
                 - Ref: StackAlarmTopic
+
+    VPC: 
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: "10.192.0.0/16"
+            EnableDnsSupport: "true"
+            EnableDnsHostnames: "true"
+            Tags: 
+                - Key: Name 
+                  Value: !Join ["-", [!Ref DatabaseName, "database"]]
+
+    InternetGateway:
+        Type: AWS::EC2::InternetGateway
+        Properties:
+            Tags:
+                - Key: Name
+                  Value: !Ref DatabaseName
+
+    InternetGatewayAttachment:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            InternetGatewayId: !Ref InternetGateway
+            VpcId: !Ref VPC
+
+    PublicSubnet1: 
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId: !Ref VPC
+            AvailabilityZone: !Select [ 0, !GetAZs ]
+            CidrBlock: "10.192.12.0/24"
+            MapPublicIpOnLaunch: true
+            Tags: 
+                - Key: Name 
+                  Value: !Sub ${DatabaseName} Public Subnet (AZ1)
+
+    PublicSubnet2:
+        Type: AWS::EC2::Subnet
+        Properties:
+            VpcId: !Ref VPC
+            AvailabilityZone: !Select [ 1, !GetAZs ]
+            CidrBlock: "10.192.13.0/24"
+            MapPublicIpOnLaunch: true
+            Tags: 
+                - Key: Name 
+                  Value: !Sub ${DatabaseName} Public Subnet (AZ2)
+
+    PublicRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties: 
+            VpcId: !Ref VPC
+            Tags: 
+                - Key: Name 
+                  Value: !Sub ${DatabaseName} Public Routes
+
+    DefaultPublicRoute: 
+        Type: AWS::EC2::Route
+        DependsOn: InternetGatewayAttachment
+        Properties: 
+            RouteTableId: !Ref PublicRouteTable
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref InternetGateway
+
+    PublicSubnet1RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PublicRouteTable
+            SubnetId: !Ref PublicSubnet1
+
+    PublicSubnet2RouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref PublicRouteTable
+            SubnetId: !Ref PublicSubnet2
 
     DatabaseSecurityGroup:
         Type: AWS::EC2::SecurityGroup

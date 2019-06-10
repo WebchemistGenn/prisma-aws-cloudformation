@@ -1,5 +1,6 @@
-# Prisma Database를 AWS RDS로 이용합니다.
-> AWS CloudFormation을 이용하여 Prisma와 연동할 수 있는 Database를 제작합니다. ( Aurora, MySQL, Postgres )
+# AWS CloudFormation
+> AWS CloudFormation을 이용하여 서비스를 배포해봅니다.
 
 
-[Deploy a AWS Database](https://www.prisma.io/tutorials/deploy-prisma-to-aws-fargate-ct14)
+[Prisma AWS Fargate Setting](https://www.prisma.io/tutorials/deploy-prisma-to-aws-fargate-ct14)
+[Git AWS-Cloudformation-Tempate](https://github.com/awslabs/aws-cloudformation-templates)
